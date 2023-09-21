@@ -42,6 +42,10 @@
 *.idb
 *.pdb
 
+# Profiling data
+gmon.out
+perf.data
+
 # Kernel Module Compile Results
 *.mod*
 *.cmd
