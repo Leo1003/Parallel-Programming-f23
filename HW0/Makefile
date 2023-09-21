@@ -6,7 +6,7 @@ AS      := $(TARGET)as
 LD      := $(TARGET)gcc
 GDB     := $(TARGET)gdb
 
-BUILD   ?= debug
+BUILD   ?= release
 
 # User Settings
 BINNAME     = pi.out
