@@ -43,14 +43,35 @@ void absVector(float *values, float *output, int N)
 void clampedExpVector(float *values, int *exponents, float *output, int N)
 {
   //
-  // PP STUDENTS TODO: Implement your vectorized version of
-  // clampedExpSerial() here.
-  //
   // Your solution should work for any value of
   // N and VECTOR_WIDTH, not just when VECTOR_WIDTH divides N
   //
+  __pp_vec_float clamp = _pp_vset_float(9.999999f);
+  __pp_vec_int int_1 = _pp_vset_int(1);
+  __pp_vec_int int_0 = _pp_vset_int(0);
+
   for (int i = 0; i < N; i += VECTOR_WIDTH)
   {
+    __pp_mask mask_all = _pp_init_ones(min(VECTOR_WIDTH, N - i));
+    __pp_mask mask_active = _pp_init_ones(0);
+    __pp_vec_float r, x;
+    __pp_vec_int e;
+
+    _pp_vset_float(r, 1.0, mask_all);
+    _pp_vload_float(x, values + i, mask_all);
+    _pp_vload_int(e, exponents + i, mask_all);
+
+    _pp_vgt_int(mask_active, e, int_0, mask_all);
+    while (_pp_cntbits(mask_active)) {
+      _pp_vsub_int(e, e, int_1, mask_active);
+      _pp_vmult_float(r, r, x, mask_active);
+      _pp_vgt_int(mask_active, e, int_0, mask_all);
+    }
+
+    _pp_vgt_float(mask_active, r, clamp, mask_all);
+    _pp_vmove_float(r, clamp, mask_active);
+
+    _pp_vstore_float(output + i, r, mask_all);
   }
 }
 
@@ -59,14 +80,24 @@ void clampedExpVector(float *values, int *exponents, float *output, int N)
 // You can assume VECTOR_WIDTH is a power of 2
 float arraySumVector(float *values, int N)
 {
-
-  //
-  // PP STUDENTS TODO: Implement your vectorized version of arraySumSerial here
-  //
+  __pp_vec_float r = _pp_vset_float(0.0);
+  __pp_mask mask_all = _pp_init_ones();
+  __pp_mask mask_first = _pp_init_ones(1);
 
   for (int i = 0; i < N; i += VECTOR_WIDTH)
   {
+    __pp_vec_float x;
+    _pp_vload_float(x, values + i, mask_all);
+    _pp_vadd_float(r, r, x, mask_all);
   }
 
-  return 0.0;
+  for (int n = VECTOR_WIDTH; n > 1; n /= 2) {
+    _pp_hadd_float(r, r);
+    _pp_interleave_float(r, r);
+  }
+
+  float result = 0.0;
+  _pp_vstore_float(&result, r, mask_first);
+
+  return result;
 }
