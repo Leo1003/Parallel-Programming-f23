@@ -42,11 +42,11 @@ scaleAndShift(float& x0, float& x1, float& y0, float& y1,
 }
 
 void usage(const char* progname) {
-    printf("Usage: %s [options]\n", progname);
-    printf("Program Options:\n");
-    printf("  -t  --threads <N>  Use N threads\n");
-    printf("  -v  --view <INT>   Use specified view settings\n");
-    printf("  -?  --help         This message\n");
+    fprintf(stderr, "Usage: %s [options]\n", progname);
+    fprintf(stderr, "Program Options:\n");
+    fprintf(stderr, "  -t  --threads <N>  Use N threads\n");
+    fprintf(stderr, "  -v  --view <INT>   Use specified view settings\n");
+    fprintf(stderr, "  -?  --help         This message\n");
 }
 
 bool verifyResult (int *gold, int *result, int width, int height) {
@@ -56,7 +56,7 @@ bool verifyResult (int *gold, int *result, int width, int height) {
     for (i = 0; i < height; i++) {
         for (j = 0; j < width; j++) {
             if (gold[i * width + j] != result[i * width + j]) {
-                printf ("Mismatch : [%d][%d], Expected : %d, Actual : %d\n",
+                fprintf(stderr, "Mismatch : [%d][%d], Expected : %d, Actual : %d\n",
                             i, j, gold[i * width + j], result[i * width + j]);
                 return 0;
             }
@@ -136,7 +136,7 @@ int main(int argc, char** argv) {
         minSerial = std::min(minSerial, endTime - startTime);
     }
 
-    printf("[mandelbrot serial]:\t\t[%.3f] ms\n", minSerial * 1000);
+    fprintf(stderr, "[mandelbrot serial]:\t\t[%.3f] ms\n", minSerial * 1000);
     writePPMImage(output_serial, width, height, "mandelbrot-serial.ppm", maxIterations);
 
     //
@@ -152,11 +152,11 @@ int main(int argc, char** argv) {
         minThread = std::min(minThread, endTime - startTime);
     }
 
-    printf("[mandelbrot thread]:\t\t[%.3f] ms\n", minThread * 1000);
+    fprintf(stderr, "[mandelbrot thread]:\t\t[%.3f] ms\n", minThread * 1000);
     writePPMImage(output_thread, width, height, "mandelbrot-thread.ppm", maxIterations);
 
     if (! verifyResult (output_serial, output_thread, width, height)) {
-        printf ("Error : Output from threads does not match serial output\n");
+        fprintf(stderr, "Error : Output from threads does not match serial output\n");
 
         delete[] output_serial;
         delete[] output_thread;
@@ -165,7 +165,8 @@ int main(int argc, char** argv) {
     }
 
     // compute speedup
-    printf("\t\t\t\t(%.2fx speedup from %d threads)\n", minSerial/minThread, numThreads);
+    fprintf(stderr, "\t\t\t\t(%.2fx speedup from %d threads)\n", minSerial/minThread, numThreads);
+    printf("%.3f\n", minSerial/minThread);
 
     delete[] output_serial;
     delete[] output_thread;

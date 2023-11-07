@@ -31,5 +31,5 @@ void writePPMImage(int *data, int width, int height, const char *filename, int m
             fputc(result, fp);
     }
     fclose(fp);
-    printf("Wrote image file %s\n", filename);
+    fprintf(stderr, "Wrote image file %s\n", filename);
 }
