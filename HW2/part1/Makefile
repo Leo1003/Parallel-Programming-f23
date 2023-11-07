@@ -13,11 +13,11 @@ BINNAME     = pi.out
 PKG_CONFIG	=
 AINCDIR     = 
 INCDIR      = 
-LIBS        = m pthread
+LIBS        = m
 FLAGS       = -march=x86-64-v3
 CFLAGS      = -std=c11
 CXXFLAGS    = -std=c++17
-LDFLAGS     = -Wl,--gc-sections
+LDFLAGS     = -Wl,--gc-sections -pthread
 DEFFLAGS    = 
 DBGFLAGS    = -pg -g -DDEBUG
 LDSCRIPT    = 
