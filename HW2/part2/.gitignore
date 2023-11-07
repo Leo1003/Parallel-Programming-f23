@@ -1,0 +1,4 @@
+mandelbrot
+
+# Output images
+*.ppm
