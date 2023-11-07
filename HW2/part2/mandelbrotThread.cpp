@@ -39,20 +39,15 @@ void workerThreadStart(WorkerArgs *const args)
     // modify it to pursue a better performance.
     double startTime = CycleTimer::currentSeconds();
 
-    int sliceRows = args->height / args->numThreads;
-    int remains = args->height % args->numThreads;
-
-    int startRow = sliceRows * args->threadId + std::min(args->threadId, remains);
-    int numRows = sliceRows + (args->threadId < remains);
-    //fprintf(stderr, "[thread %d]:\t\tCalculating [%d] rows from %d row\n", args->threadId, numRows, startRow);
-
-    mandelbrotSerial(
-        args->x0, args->y0, args->x1, args->y1,
-        args->width, args->height,
-        startRow, numRows,
-        args->maxIterations,
-        args->output
-    );
+    for (size_t r = args->threadId; r < args->height; r += args->numThreads) {
+        mandelbrotSerial(
+            args->x0, args->y0, args->x1, args->y1,
+            args->width, args->height,
+            r, 1,
+            args->maxIterations,
+            args->output
+        );
+    }
 
     double endTime = CycleTimer::currentSeconds();
     fprintf(stderr, "[thread %d]:\t\t[%.3f] ms\n", args->threadId, (endTime - startTime) * 1000);
