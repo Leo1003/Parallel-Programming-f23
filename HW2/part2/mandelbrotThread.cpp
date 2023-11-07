@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <stdio.h>
 #include <thread>
 
@@ -37,7 +38,19 @@ void workerThreadStart(WorkerArgs *const args)
     // Of course, you can copy mandelbrotSerial() to this file and 
     // modify it to pursue a better performance.
 
-    printf("Hello world from thread %d\n", args->threadId);
+    int sliceRows = args->height / args->numThreads;
+    int remains = args->height % args->numThreads;
+
+    int startRow = sliceRows * args->threadId + std::min(args->threadId, remains);
+    int numRows = sliceRows + (args->threadId < remains);
+
+    mandelbrotSerial(
+        args->x0, args->y0, args->x1, args->y1,
+        args->width, args->height,
+        startRow, numRows,
+        args->maxIterations,
+        args->output
+    );
 }
 
 //
