@@ -44,15 +44,18 @@ void pageRank(Graph g, double *solution, double damping, double convergence)
     }
 
     while (!converged) {
-        fprintf(stderr, "pr_t[0] = %le\n", pr_t[0]);
         double *pr_t1 = (double *)malloc(sizeof(double) * numNodes);
 
+        // Calculate common score for no outgoing nodes
         double tail_score = 0.0;
+        #pragma omp parallel for reduction(+:tail_score)
         for (int i = 0; i < tail_nodes.size(); i++) {
             tail_score += pr_t[tail_nodes[i]];
         }
         tail_score = tail_score * damping / numNodes;
 
+        double global_diff = 0.0;
+        #pragma omp parallel for reduction(+:global_diff)
         for (int i = 0; i < numNodes; i++) {
             double score = 0.0;
 
@@ -63,14 +66,12 @@ void pageRank(Graph g, double *solution, double damping, double convergence)
             }
 
             pr_t1[i] = (1.0 - damping) / numNodes + (damping * score) + tail_score;
-        }
 
-        // compute how much per-node scores have changed
-        // quit once algorithm has converged
-        double global_diff = 0.0;
-        for (int i = 0; i < numNodes; i++) {
+            // compute how much per-node scores have changed
             global_diff += abs(pr_t1[i] - pr_t[i]);
         }
+
+        // quit once algorithm has converged
         converged = (global_diff < convergence);
 
         free(pr_t);
