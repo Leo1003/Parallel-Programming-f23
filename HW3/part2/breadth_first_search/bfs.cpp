@@ -34,27 +34,38 @@ void top_down_step(
     vertex_set *new_frontier,
     int *distances)
 {
-    #pragma omp parallel for schedule(dynamic, 1024)
-    for (int i = 0; i < frontier->count; i++) {
+    #pragma omp parallel
+    {
+        vertex_set *local_frontier = (vertex_set *)malloc(sizeof(vertex_set));
 
-        int node = frontier->vertices[i];
+        vertex_set_init(local_frontier, g->num_nodes);
 
-        int start_edge = g->outgoing_starts[node];
-        int end_edge = (node == g->num_nodes - 1)
-                           ? g->num_edges
-                           : g->outgoing_starts[node + 1];
+        #pragma omp for nowait schedule(dynamic, 1024)
+        for (int i = 0; i < frontier->count; i++) {
+            int node = frontier->vertices[i];
 
-        // attempt to add all neighbors to the new frontier
-        for (int neighbor = start_edge; neighbor < end_edge; neighbor++)
-        {
-            int outgoing = g->outgoing_edges[neighbor];
+            int start_edge = g->outgoing_starts[node];
+            int end_edge = (node == g->num_nodes - 1)
+                               ? g->num_edges
+                               : g->outgoing_starts[node + 1];
 
-            bool not_visited = __sync_bool_compare_and_swap(&distances[outgoing], NOT_VISITED_MARKER, distances[node] + 1);
-            if (not_visited) {
-                int index = __sync_fetch_and_add(&new_frontier->count, 1);
-                new_frontier->vertices[index] = outgoing;
+            // attempt to add all neighbors to the new frontier
+            for (int neighbor = start_edge; neighbor < end_edge; neighbor++) {
+                int outgoing = g->outgoing_edges[neighbor];
+
+                bool not_visited = __sync_bool_compare_and_swap(&distances[outgoing], NOT_VISITED_MARKER, distances[node] + 1);
+                if (not_visited) {
+                    int index = local_frontier->count++;
+                    local_frontier->vertices[index] = outgoing;
+                }
             }
         }
+
+        // frontier reduction
+        int index = __sync_fetch_and_add(&new_frontier->count, local_frontier->count);
+        memcpy(new_frontier->vertices + index, local_frontier->vertices, sizeof(int) * local_frontier->count);
+
+        free(local_frontier);
     }
 }
 
@@ -111,20 +122,33 @@ void bottom_up_step(
     bool *frontier_set,
     int *distances)
 {
-    #pragma omp parallel for schedule(dynamic, 1024)
-    for (int i = 0; i < g->num_nodes; i++) {
-        if (distances[i] == NOT_VISITED_MARKER) {
-            const Vertex* start = incoming_begin(g, i);
-            const Vertex* end = incoming_end(g, i);
-            for (const Vertex* v = start; v != end; v++) {
-                if (frontier_set[*v]) {
-                    int index = __sync_fetch_and_add(&new_frontier->count, 1);
-                    new_frontier->vertices[index] = i;
-                    distances[i] = distances[*v] + 1;
-                    break;
+    #pragma omp parallel
+    {
+        vertex_set *local_frontier = (vertex_set *)malloc(sizeof(vertex_set));
+
+        vertex_set_init(local_frontier, g->num_nodes);
+
+        #pragma omp for nowait schedule(dynamic, 1024)
+        for (int i = 0; i < g->num_nodes; i++) {
+            if (distances[i] == NOT_VISITED_MARKER) {
+                const Vertex* start = incoming_begin(g, i);
+                const Vertex* end = incoming_end(g, i);
+                for (const Vertex* v = start; v != end; v++) {
+                    if (frontier_set[*v]) {
+                        int index = local_frontier->count++;
+                        local_frontier->vertices[index] = i;
+                        distances[i] = distances[*v] + 1;
+                        break;
+                    }
                 }
             }
         }
+
+        // frontier reduction
+        int index = __sync_fetch_and_add(&new_frontier->count, local_frontier->count);
+        memcpy(new_frontier->vertices + index, local_frontier->vertices, sizeof(int) * local_frontier->count);
+
+        free(local_frontier);
     }
 }
 
