@@ -11,6 +11,7 @@
 #define eprintf(fmt, ...) fprintf(stderr, fmt, ##__VA_ARGS__)
 
 #define MPIMSG_TAG_TOSS     0UL
+#define MPIMSG_TAG_ITER     1UL
 
 inline static uint64_t test_point(struct drand48_data *state)
 {
@@ -56,18 +57,26 @@ int main(int argc, char **argv)
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
 
-    uint64_t toss_result = pi_toss(tosses);
 
-    uint64_t point_total = 0;
-    uint64_t point_inside = 0;
+    MPI_Status status;
     if (world_rank > 0) {
+        uint64_t local_tosses;
+        MPI_Recv(&local_tosses, 1, MPI_UNSIGNED_LONG, 0, MPIMSG_TAG_ITER, MPI_COMM_WORLD, &status);
+        
+        uint64_t toss_result = pi_toss(local_tosses);
+        
         uint64_t sendbuf[2];
         sendbuf[0] = toss_result;
-        sendbuf[1] = tosses;
+        sendbuf[1] = local_tosses;
         MPI_Send(sendbuf, 2, MPI_UNSIGNED_LONG, 0, MPIMSG_TAG_TOSS, MPI_COMM_WORLD);
     } else if (world_rank == 0) {
-        point_inside += toss_result;
-        point_total += tosses;
+        uint64_t every_tosses = tosses / world_size;
+        for (int i = 1; i < world_size; i++) {
+            MPI_Send(&every_tosses, 1, MPI_UNSIGNED_LONG, i, MPIMSG_TAG_ITER, MPI_COMM_WORLD);
+        }
+
+        uint64_t point_inside = pi_toss(every_tosses);
+        uint64_t point_total = every_tosses;
 
         for (int i = 1; i < world_size; i++) {
             MPI_Status status;
@@ -76,10 +85,7 @@ int main(int argc, char **argv)
             point_inside += recvbuf[0];
             point_total += recvbuf[1];
         }
-    }
 
-    if (world_rank == 0)
-    {
         pi_result = ((double)point_inside / (double)point_total) * 4;
 
         // --- DON'T TOUCH ---
