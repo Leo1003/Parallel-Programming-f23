@@ -108,11 +108,12 @@ int main(int argc, char **argv)
     uint64_t partial_pi = pi_toss(partial_pp);
 
     MPI_Status status;
-    int r = world_rank;
     int level = 0;
     if (world_rank > 0) {
+        int r = world_rank;
         while (r % 2 == 0) {
             uint64_t recvbuf[2];
+            eprintf("[%d] Receive from %d\n", world_rank, ((r + 1) << level));
             MPI_Recv(recvbuf, 2, MPI_UNSIGNED_LONG, ((r + 1) << level), MPIMSG_TAG_TOSS, MPI_COMM_WORLD, &status);
             partial_pi += recvbuf[0];
             partial_pp += recvbuf[1];
@@ -124,14 +125,15 @@ int main(int argc, char **argv)
         uint64_t sendbuf[2];
         sendbuf[0] = partial_pi;
         sendbuf[1] = partial_pp;
+        eprintf("[%d] Send to %d\n", world_rank, ((r - 1) << level));
         MPI_Send(sendbuf, 2, MPI_UNSIGNED_LONG, ((r - 1) << level), MPIMSG_TAG_TOSS, MPI_COMM_WORLD);
-    }
-
-    if (world_rank == 0) {
-        r = world_size;
-        while (r % 2 == 0) {
+    } else {
+        // world_rank == 0
+        int r = world_size;
+        while (r > 1) {
             uint64_t recvbuf[2];
-            MPI_Recv(recvbuf, 2, MPI_UNSIGNED_LONG, ((r + 1) << level), MPIMSG_TAG_TOSS, MPI_COMM_WORLD, &status);
+            eprintf("[%d] Receive from %d\n", world_rank, (1 << level));
+            MPI_Recv(recvbuf, 2, MPI_UNSIGNED_LONG, (1 << level), MPIMSG_TAG_TOSS, MPI_COMM_WORLD, &status);
             partial_pi += recvbuf[0];
             partial_pp += recvbuf[1];
 
