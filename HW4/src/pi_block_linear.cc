@@ -1,22 +1,22 @@
-#include <sys/sysinfo.h>
-#define _GNU_SOURCE
 #include <mpi.h>
 #include <pthread.h>
-#include <stdatomic.h>
+#include <atomic>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <sys/sysinfo.h>
 #include <sys/types.h>
 #include <unistd.h>
+using namespace std;
 
 #define eprintf(fmt, ...) fprintf(stderr, fmt, ##__VA_ARGS__)
 
 #define MPIMSG_TAG_TOSS     0UL
 #define MPIMSG_TAG_ITER     1UL
 
-static atomic_ullong point_inside = 0;
-static atomic_ullong point_total = 0;
+static atomic_ullong point_inside;
+static atomic_ullong point_total;
 
 struct thread_ctx {
     unsigned long long toss;
@@ -60,6 +60,9 @@ static void *thread_main(void *_data)
 
 static uint64_t pi_toss(uint64_t toss)
 {
+    point_inside = 0;
+    point_total = 0;
+
     size_t thread_cnt = get_nprocs();
 
     pthread_t *thread_states = (pthread_t *)malloc(sizeof(pthread_t) * thread_cnt);
@@ -101,7 +104,6 @@ int main(int argc, char **argv)
     
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
-
 
     MPI_Status status;
     if (world_rank > 0) {
