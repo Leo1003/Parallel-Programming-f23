@@ -12,7 +12,6 @@ using namespace std;
 #define eprintf(fmt, ...) fprintf(stderr, fmt, ##__VA_ARGS__)
 
 #define MPIMSG_TAG_TOSS     0UL
-#define MPIMSG_TAG_ITER     1UL
 
 static atomic_ullong point_inside;
 static atomic_ullong point_total;
