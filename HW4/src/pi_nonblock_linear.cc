@@ -145,7 +145,6 @@ int main(int argc, char **argv)
     }
 
     if (world_rank == 0) {
-        // TODO: PI result
         uint64_t pi = 0;
         uint64_t pp = 0;
         for (int i = 0; i < world_size; i++) {

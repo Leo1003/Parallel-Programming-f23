@@ -13,7 +13,6 @@ using namespace std;
 #define eprintf(fmt, ...) fprintf(stderr, fmt, ##__VA_ARGS__)
 
 #define MPIMSG_TAG_TOSS     0UL
-#define MPIMSG_TAG_ITER     1UL
 
 static atomic_ullong point_inside;
 static atomic_ullong point_total;
@@ -27,7 +26,7 @@ inline static unsigned long test_point(struct drand48_data *state)
     double x, y;
     drand48_r(state, &x);
     drand48_r(state, &y);
-    
+
     return (x * x + y * y) < 1.0;
 }
 
@@ -86,7 +85,7 @@ static uint64_t pi_toss(uint64_t toss)
 
     free(thread_data);
     free(thread_states);
-    
+
     uint64_t pi = atomic_load(&point_inside);
 
     return pi;
@@ -101,29 +100,23 @@ int main(int argc, char **argv)
     long long int tosses = atoi(argv[1]);
     int world_rank, world_size;
     // ---
-    
+
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
 
+    uint64_t local_tosses = tosses / world_size;
+
     MPI_Status status;
     if (world_rank > 0) {
-        uint64_t local_tosses;
-        MPI_Recv(&local_tosses, 1, MPI_UNSIGNED_LONG, 0, MPIMSG_TAG_ITER, MPI_COMM_WORLD, &status);
-        
         uint64_t toss_result = pi_toss(local_tosses);
-        
+
         uint64_t sendbuf[2];
         sendbuf[0] = toss_result;
         sendbuf[1] = local_tosses;
         MPI_Send(sendbuf, 2, MPI_UNSIGNED_LONG, 0, MPIMSG_TAG_TOSS, MPI_COMM_WORLD);
     } else if (world_rank == 0) {
-        uint64_t every_tosses = tosses / world_size;
-        for (int i = 1; i < world_size; i++) {
-            MPI_Send(&every_tosses, 1, MPI_UNSIGNED_LONG, i, MPIMSG_TAG_ITER, MPI_COMM_WORLD);
-        }
-
-        uint64_t pi = pi_toss(every_tosses);
-        uint64_t pp = every_tosses;
+        uint64_t pi = pi_toss(local_tosses);
+        uint64_t pp = local_tosses;
 
         for (int i = 1; i < world_size; i++) {
             MPI_Status status;
