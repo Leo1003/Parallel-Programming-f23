@@ -152,9 +152,9 @@ int main(int argc, char **argv)
         local_result.p[0] = local_pi;
         local_result.p[1] = local_pp;
 
-        MPI_Win_lock(MPI_LOCK_EXCLUSIVE, world_rank, 0, win);
+        MPI_Win_lock(MPI_LOCK_EXCLUSIVE, 0, 0, win);
         MPI_Put(&local_result.p, 2, MPI_UNSIGNED_LONG, 0, world_rank, 2, MPI_UNSIGNED_LONG, win);
-        MPI_Win_unlock(world_rank, win);
+        MPI_Win_unlock(0, win);
 
         printf("[Worker %d] RMA finished\n", world_rank);
     }
