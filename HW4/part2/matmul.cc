@@ -107,9 +107,11 @@ static void matrix_multiply_worker(const int rank, const int n, const int m, con
             for (int i = 0; i < l; i++) {
                 int sum = 0;
                 for (int j = 0; j < m; j++) {
-                    sum += a_vec[j] * b_mat[i + j * n];
+                    sum += a_vec[j] * b_mat[i + j * l];
+                    //eprintf("[Worker %d] sum += %d * %d\n", rank, a_vec[j], b_mat[i + j * l]);
                 }
                 c_vec[i] = sum;
+                //eprintf("[Worker %d] c_vec[%d] = %d\n", rank, i, sum);
             }
 
             MPI_Send(c_vec, l, MPI_INT, RANK_MASTER, TAG_RESULT_VECTOR, MPI_COMM_WORLD);
@@ -173,6 +175,7 @@ void wait_jobs(vector<worker_status> &workers,
             eprintf("[Master] Job %d complete from worker %d \n", i, r);
             for (int j = 0; j < l; j++) {
                 c_mat[i * l + j] = workers[r].resultbuf[j];
+                //eprintf("[Master] c_mat[%d] = %d\n", i * l + j, workers[r].resultbuf[j]);
             }
             workers[r].busy = false;
             workers[r].job_id = -1;
@@ -191,6 +194,7 @@ void wait_jobs(vector<worker_status> &workers,
         eprintf("[Master] Job %d complete from worker %d \n", i, r);
         for (int j = 0; j < l; j++) {
             c_mat[i * l + j] = workers[r].resultbuf[j];
+            //eprintf("[Master] c_mat[%d] = %d\n", i * l + j, workers[r].resultbuf[j]);
         }
         workers[r].busy = false;
         workers[r].job_id = -1;
@@ -209,6 +213,8 @@ void matrix_multiply(const int n, const int m, const int l, const int *a_mat, co
     MPI_Bcast(dim, 3, MPI_INT, RANK_MASTER, MPI_COMM_WORLD);
 
     if (world_rank == RANK_MASTER) {
+        eprintf("[Master] Performing %d x %d by %d x %d matrix multiplication\n", n, m, m, l);
+
         MPI_Request *requests = (MPI_Request *)malloc(sizeof(MPI_Request) * world_size);
         if (requests == NULL) {
             MPI_Abort(MPI_COMM_WORLD, 1);
