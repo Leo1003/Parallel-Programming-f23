@@ -172,7 +172,7 @@ void wait_jobs(vector<worker_status> &workers,
             int i = workers[r].job_id;
             eprintf("[Master] Job %d complete from worker %d \n", i, r);
             for (int j = 0; j < l; j++) {
-                c_mat[i + j * n] = workers[r].resultbuf[j];
+                c_mat[i * l + j] = workers[r].resultbuf[j];
             }
             workers[r].busy = false;
             workers[r].job_id = -1;
