@@ -116,6 +116,7 @@ static void matrix_multiply_worker(const int rank, const int n, const int m, con
 
             MPI_Send(c_vec, l, MPI_INT, RANK_MASTER, TAG_RESULT_VECTOR, MPI_COMM_WORLD);
         } else if (command == COMMAND_SHUTDOWN) {
+            eprintf("[Worker %d] Receive Shutdown command from master. Exiting...\n", rank);
             break;
         } else {
             eprintf("[Worker %d] Received unknown command: %hu!\n", rank, command);
@@ -172,7 +173,7 @@ void wait_jobs(vector<worker_status> &workers,
             }
 
             int i = workers[r].job_id;
-            eprintf("[Master] Job %d complete from worker %d \n", i, r);
+            //eprintf("[Master] Job %d complete from worker %d \n", i, r);
             for (int j = 0; j < l; j++) {
                 c_mat[i * l + j] = workers[r].resultbuf[j];
                 //eprintf("[Master] c_mat[%d] = %d\n", i * l + j, workers[r].resultbuf[j]);
@@ -191,7 +192,7 @@ void wait_jobs(vector<worker_status> &workers,
 
         int r = status.MPI_SOURCE;
         int i = workers[r].job_id;
-        eprintf("[Master] Job %d complete from worker %d \n", i, r);
+        //eprintf("[Master] Job %d complete from worker %d \n", i, r);
         for (int j = 0; j < l; j++) {
             c_mat[i * l + j] = workers[r].resultbuf[j];
             //eprintf("[Master] c_mat[%d] = %d\n", i * l + j, workers[r].resultbuf[j]);
@@ -252,12 +253,13 @@ void matrix_multiply(const int n, const int m, const int l, const int *a_mat, co
                 int w = idle_workers.front();
                 idle_workers.pop_front();
                 workers[w].job_id = progress++;
-                eprintf("[Master] Sending job %d to worker %d...\n", workers[w].job_id, workers[w].rank);
+                //eprintf("[Master] Sending job %d to worker %d...\n", workers[w].job_id, workers[w].rank);
                 send_job(workers[w], n, m, l, a_mat, &requests[w]);
             } else {
                 wait_jobs(workers, idle_workers, requests, world_size, n, m, l, c_mat);
             }
         }
+        eprintf("[Master] All jobs are sent. Waiting for results...\n");
         wait_jobs(workers, idle_workers, requests, world_size, n, m, l, c_mat, true);
 
         eprintf("[Master] Shutting down workers...\n");
