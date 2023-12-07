@@ -3,7 +3,7 @@ TARGET  :=
 CC      := $(TARGET)gcc
 CXX     := $(TARGET)g++
 AS      := $(TARGET)as
-LD      := $(TARGET)gcc
+LD      := $(TARGET)g++
 GDB     := $(TARGET)gdb
 
 BUILD   ?= release
@@ -17,9 +17,9 @@ LIBS        = m mpi mpi_cxx
 FLAGS       = -march=native -pthread
 CFLAGS      = -std=c11
 CXXFLAGS    = -std=c++17
-LDFLAGS     = -pg -Wl,--gc-sections -L/usr/lib/x86_64-linux-gnu/openmpi/lib
+LDFLAGS     = -Wl,--gc-sections -L/usr/lib/x86_64-linux-gnu/openmpi/lib
 DEFFLAGS    = 
-DBGFLAGS    = -pg -g -DDEBUG
+DBGFLAGS    = -g -DDEBUG
 LDSCRIPT    = 
 
 # Compile Flags
@@ -27,7 +27,7 @@ __FLAGS      = $(shell pkg-config --cflags $(PKG_CONFIG))
 __ASFLAGS    = $(foreach d, $(AINCDIR), -I$d)
 __CFLAGS     = $(OPTIFLAGS) $(DEFFLAGS) $(foreach d, $(INCDIR), -I$d) $(CFLAGS)
 __CXXFLAGS   = $(OPTIFLAGS) $(DEFFLAGS) $(foreach d, $(INCDIR), -I$d) $(CXXFLAGS)
-__LDFLAGS    = $(shell pkg-config --libs $(PKG_CONFIG)) $(foreach l, $(LIBS), -l$l) $(LDFLAGS)
+__LDFLAGS    = $(shell pkg-config --libs $(PKG_CONFIG)) $(LDFLAGS) $(foreach l, $(LIBS), -l$l)
 
 OPTIFLAGS   = 
 ifeq ($(BUILD),debug)
@@ -92,7 +92,7 @@ $(DEPDIR)/%.d: %.cpp | $(DEPDIR)
 	@$(CXX) -MM -MP $(FLAGS) $(__CXXFLAGS) $< >> $@
 
 $(BINNAME): $(OBJS)
-	$(LD) $(FLAGS) $(__LDFLAGS) -o $@ $(OBJS)
+	$(LD) $(FLAGS) -o $@ $(OBJS) $(__LDFLAGS)
 
 ifneq ($(DEPS),)
   sinclude $(DEPS)
