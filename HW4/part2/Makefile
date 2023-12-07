@@ -51,7 +51,8 @@ endif
 SRCS.s      = $(wildcard *.s)
 SRCS.c      = $(wildcard *.c)
 SRCS.cpp    = $(wildcard *.cpp)
-OBJFILES    = $(SRCS.c:.c=.o) $(SRCS.cpp:.cpp=.o) $(SRCS.s:.s=.o)
+SRCS.cc     = $(wildcard *.cc)
+OBJFILES    = $(SRCS.c:.c=.o) $(SRCS.cpp:.cpp=.o) $(SRCS.cc:.cc=.o) $(SRCS.s:.s=.o)
 OBJS        = $(addprefix $(OBJDIR)/,$(OBJFILES))
 DEPFILES    = $(SRCS.c:.c=.d) $(SRCS.cpp:.cpp=.d)
 DEPS        = $(addprefix $(DEPDIR)/,$(DEPFILES))
@@ -72,12 +73,19 @@ $(OBJDIR)/%.o: %.s | $(OBJDIR)
 $(OBJDIR)/%.o: %.c | $(OBJDIR)
 	$(CC) $(FLAGS) $(__FLAGS) $(__CFLAGS) -c -o $@ $<
 
+$(OBJDIR)/%.o: %.cc | $(OBJDIR)
+	$(CXX) $(FLAGS) $(__FLAGS) $(__CXXFLAGS) -c -o $@ $<
+
 $(OBJDIR)/%.o: %.cpp | $(OBJDIR)
 	$(CXX) $(FLAGS) $(__FLAGS) $(__CXXFLAGS) -c -o $@ $<
 
 $(DEPDIR)/%.d: %.c | $(DEPDIR)
 	@echo -n "$(OBJDIR)/" > $@
 	@$(CC) -MM -MP $(FLAGS) $(__CFLAGS) $< >> $@
+
+$(DEPDIR)/%.d: %.cc | $(DEPDIR)
+	@echo -n "$(OBJDIR)/" > $@
+	@$(CXX) -MM -MP $(FLAGS) $(__CXXFLAGS) $< >> $@
 
 $(DEPDIR)/%.d: %.cpp | $(DEPDIR)
 	@echo -n "$(OBJDIR)/" > $@
