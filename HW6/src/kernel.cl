@@ -6,25 +6,21 @@ __kernel void convolution(
     __global float *inputImage,
     __global float *outputImage)
 {
-    int halffilterSize = filterWidth / 2;
+    int pad_margin = filterWidth / 2;
+    int padded_width = imageWidth + (pad_margin * 2);
+    int padded_height = imageHeight + (pad_margin * 2);
+
     int x = get_global_id(0);
     int y = get_global_id(1);
     float sum = 0;
 
     // Apply the filter to the neighborhood
-    // Copy from the serial version
-    for (int k = -halffilterSize; k <= halffilterSize; k++) {
-        for (int l = -halffilterSize; l <= halffilterSize; l++) {
-            int dx = x + l;
-            int dy = y + k;
+    for (int fy = 0; fy <= filterWidth; fy++) {
+        for (int fx = 0; fx <= filterWidth; fx++) {
+            int dx = x + fx;
+            int dy = y + fy;
 
-            if (dy >= 0 &&
-                dy < imageHeight &&
-                dx >= 0 &&
-                dx < imageWidth) {
-                sum += inputImage[dy * imageWidth + dx] *
-                       filter[(k + halffilterSize) * filterWidth + l + halffilterSize];
-            }
+            sum += inputImage[dy * padded_width + dx] * filter[fy * filterWidth + fx];
         }
     }
 
